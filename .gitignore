@@ -1,0 +1,33 @@
+# Entorno virtual
+.venv/
+env/
+ENV/
+
+# Cachés de Python
+__pycache__/
+.mypy_cache/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Archivos de log o salida
+*.log
+*.tmp
+*.bak
+
+# Archivos generados o transitorios
+*.wav
+*.mp3
+*.webm
+*.mp4
+*.srt
+
+# Archivos del sistema/IDE
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Archivos de prueba o resultados intermedios
+test*.*
+output.*
