@@ -1,5 +1,6 @@
 # Entorno virtual
 .venv/
+.venv311/
 env/
 ENV/
 
@@ -31,3 +32,6 @@ Thumbs.db
 # Archivos de prueba o resultados intermedios
 test*.*
 output.*
+
+#Tokens
+hug_token.txt
