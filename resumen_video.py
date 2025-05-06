@@ -1,14 +1,17 @@
+from flask import Flask, request, jsonify
 import whisper
 import subprocess
-import os
 import tempfile
+import os
 import torch
 import time
 
-VIDEO_PATH = "testVideo1.webm"  # cambia este path
+app = Flask(__name__)
 
-print("""🔹 CUDA disponible:""", torch.cuda.is_available())
-if torch.cuda.is_available(): print("""🔸 Dispositivo CUDA:""", torch.cuda.get_device_name(0))
+print("🔹 CUDA disponible:", torch.cuda.is_available())
+if torch.cuda.is_available():
+    print("🔸 Dispositivo CUDA:", torch.cuda.get_device_name(0))
+
 
 def extraer_audio(video_path, output_audio_path):
     subprocess.run([
@@ -26,31 +29,32 @@ def transcribir_audio(audio_path, model_size="small"):
     print(f"⏱️ Transcripción completada en {end_time - start_time:.2f} segundos.")
     return result["text"]
 
-def resumir_texto_con_ollama(texto, modelo="mistral"):
-    prompt = f"Resume el siguiente texto en puntos clave, en español:\n\n{texto}\n\nResumen:"
-    start_time = time.time()
+@app.route('/transcribe', methods=['POST'])
+def transcribir():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No se encontró ningún archivo'}), 400
 
-    result = subprocess.run(
-        ["ollama", "run", modelo],
-        input=prompt.encode("utf-8"),
-        stdout=subprocess.PIPE
-    )
-    end_time = time.time()
-    print(f"⏱️ Resumen generado en {end_time - start_time:.2f} segundos.")
-    return result.stdout.decode("utf-8")
+    file = request.files['file']
 
-def main():
     with tempfile.TemporaryDirectory() as tmpdir:
-        audio_path = os.path.join(tmpdir, "audio.wav")
-        extraer_audio(VIDEO_PATH, audio_path)
-        
-        texto = transcribir_audio(audio_path, model_size="small")
-        print("\n🔸 TRANSCRIPCIÓN COMPLETA:\n")
-        print(texto[:1000] + "...\n")  # Muestra parte
-        
-        resumen = resumir_texto_con_ollama(texto)
-        print("\n🔹 RESUMEN GENERADO:\n")
-        print(resumen)
+        input_path = os.path.join(tmpdir, file.filename)
+        file.save(input_path)
 
-if __name__ == "__main__":
-    main()
+        # Detectar si es video o audio
+        if file.filename.lower().endswith(('.mp4', '.webm', '.mkv', '.avi')):
+            audio_path = os.path.join(tmpdir, "audio.wav")
+            extraer_audio(input_path, audio_path)
+        elif file.filename.lower().endswith(('.mp3', '.wav')):
+            audio_path = input_path
+        else:
+            audio_path = input_path
+
+        try:
+            texto = transcribir_audio(audio_path)
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+        return jsonify({'transcripcion': texto})
+
+if __name__ == '__main__':
+    app.run(debug=True)
